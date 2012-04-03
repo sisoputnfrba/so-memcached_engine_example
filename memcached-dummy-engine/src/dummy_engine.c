@@ -128,7 +128,11 @@ MEMCACHED_PUBLIC_API ENGINE_ERROR_CODE create_instance(uint64_t interface, GET_S
 	void _cache_item_destroy(void *item){
 		// La variable item es un elemento que esta
 		// dentro del dictionary, el cual es un
-		// t_dummy_ng_item
+		// t_dummy_ng_item. Este solo puede ser borrado
+		// si no esta "storeado"
+
+		((t_dummy_ng_item*)item)->stored = false;
+
 		dummy_ng_item_release(NULL, NULL, item);
 	}
 
@@ -223,6 +227,7 @@ static ENGINE_ERROR_CODE dummy_ng_allocate(ENGINE_HANDLE *handler, const void* c
 	it->ndata = nbytes;
 	it->key = malloc(nkey);
 	it->data = malloc(nbytes);
+	it->stored = false;
 
 	memcpy(it->key, key, nkey);
 	*item = it;
@@ -235,9 +240,11 @@ static ENGINE_ERROR_CODE dummy_ng_allocate(ENGINE_HANDLE *handler, const void* c
  */
 static void dummy_ng_item_release(ENGINE_HANDLE *handler, const void *cookie, item* item){
 	t_dummy_ng_item *it = (t_dummy_ng_item*)item;
-	free(it->key);
-	free(it->data);
-	free(it);
+	if( !it->stored ){
+		free(it->key);
+		free(it->data);
+		free(it);
+	}
 }
 
 /*
@@ -295,15 +302,13 @@ static ENGINE_ERROR_CODE dummy_ng_get(ENGINE_HANDLE *handle, const void* cookie,
 static ENGINE_ERROR_CODE dummy_ng_store(ENGINE_HANDLE *handle, const void *cookie, item* item, uint64_t *cas, ENGINE_STORE_OPERATION operation, uint16_t vbucket){
 	t_dummy_ng_item *it = (t_dummy_ng_item*)item;
 
-	char strkey[it->nkey + 1];
+	char *strkey = malloc(it->nkey + 1);
 	memcpy(strkey, it->key, it->nkey);
 	strkey[it->nkey] = '\0';
 
-	t_dummy_ng_item* new_item = NULL;
-	dummy_ng_allocate(handle, cookie, (void**)&new_item, it->key, it->nkey, it->ndata, it->flags, it->exptime);
-	memcpy(new_item->data, it->data, it->ndata);
+	it->stored = true;
 
-	dictionary_put(cache, strkey, new_item);
+	dictionary_put(cache, strkey, it);
 
    *cas = 0;
    return ENGINE_SUCCESS;
@@ -333,6 +338,8 @@ static ENGINE_ERROR_CODE dummy_ng_item_delete(ENGINE_HANDLE* handle, const void*
 	if( item == NULL ) {
 		return ENGINE_KEY_ENOENT;
 	}
+
+	((t_dummy_ng_item*)item)->stored = false;
 
 	dummy_ng_item_release(handle, NULL, item);
 
