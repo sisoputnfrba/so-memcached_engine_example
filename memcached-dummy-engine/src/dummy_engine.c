@@ -212,6 +212,14 @@ static const engine_info* dummy_ng_get_info(ENGINE_HANDLE* handle) {
 	return &info;
 }
 
+// Esta función es la que se encarga de allocar un item. Este item es la metadata necesaria para almacenar la key
+// y el valor. Esta función solo se llama temporalemente antes de hacer, por ejemplo, un store. Luego del store
+// el motor llama a la función release. Es por ello que utilizamos un flag "stored" para saber si el elemento
+// allocado realmente fue almacenado en la cache o no.
+// Puede ocurrir que este mismo se llame 2 veces para la misma operación. Esto es porque el protocolo ASCII de
+// memcached hace el envio de la información en 2 partes, una con la key, size y metadata y otra parte con la data en si.
+// Por lo que es posible que una vez se llame para hacer un allocamiento temporal del item y luego se llame otra vez, la cual
+// si va a ser almacenada.
 static ENGINE_ERROR_CODE dummy_ng_allocate(ENGINE_HANDLE *handler, const void* cookie, item **item, const void* key,
 											const size_t nkey, const size_t nbytes, const int flags, const rel_time_t exptime){
 
