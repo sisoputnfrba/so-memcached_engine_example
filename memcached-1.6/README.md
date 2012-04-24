@@ -20,7 +20,13 @@ En la solapa de Enviroment:
 
 ## Compilación: 
 
-Ejecute el comando 'make' en la carpeta. Este generara una carpeta llamada .libs donde se encontraran todos los binarios y bibliotecas compartidas.
+Ejecute los siguientes comandos:
+```
+./configure --prefix=/usr/local
+make
+```
+
+Esto generara una carpeta llamada .libs donde se encontraran todos los binarios y bibliotecas compartidas.
 
 ## Ejecución: 
 
