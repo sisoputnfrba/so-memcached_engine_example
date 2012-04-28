@@ -8,6 +8,7 @@
 #ifndef DUMMY_ENGINE_C_
 #define DUMMY_ENGINE_C_
 
+	#include <stdbool.h>
 	#include <memcached/engine.h>
 	#include <memcached/util.h>
 	#include <memcached/visibility.h>
@@ -22,6 +23,7 @@
 	   void *data;
 	   size_t ndata;
 	   int flags;
+	   bool stored;
 	   rel_time_t exptime;
 	}t_dummy_ng_item;
 
